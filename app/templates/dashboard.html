@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Subplot{% endblock %}
+
+{% block nav_links %}
+<span class="nav-email">{{ current_user.email }}</span>
+<a href="/logout" class="btn btn-ghost btn-sm">Sign out</a>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <header class="dash-header">
+    <div class="dash-header-inner">
+      <div>
+        <h1 class="dash-title">Hi, {{ current_user.email.split('@')[0] }} 👋</h1>
+        <p class="dash-sub">Here's everything Subplot is monitoring for you.</p>
+      </div>
+      <button class="btn btn-primary" id="send-now-btn" onclick="sendNow()">
+        ⚡ Send Test Report Now
+      </button>
+    </div>
+    <div id="send-now-result" class="toast" hidden></div>
+  </header>
+
+  <!-- ── Students ─────────────────────────────────────────────────── -->
+  <section class="dash-section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-heading">Students</h2>
+        <p class="section-desc">Connect your kids' Aeries accounts.</p>
+      </div>
+      <button class="btn btn-outline" onclick="openModal('student-modal')">+ Add Student</button>
+    </div>
+    <div id="students-list" class="item-list">
+      <div class="list-loading">Loading…</div>
+    </div>
+  </section>
+
+  <!-- ── Phone Numbers ────────────────────────────────────────────── -->
+  <section class="dash-section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-heading">Phone Numbers</h2>
+        <p class="section-desc">Where we send grade reports.</p>
+      </div>
+      <button class="btn btn-outline" onclick="openModal('phone-modal')">+ Add Number</button>
+    </div>
+    <div id="phones-list" class="item-list">
+      <div class="list-loading">Loading…</div>
+    </div>
+    <div id="verify-section" class="verify-section" hidden>
+      <p class="verify-prompt">Enter the 6-digit code we texted you:</p>
+      <div class="verify-row">
+        <input class="form-input verify-input" type="text" id="verify-phone-number" placeholder="+1…" readonly />
+        <input class="form-input verify-input" type="text" id="verify-code" maxlength="6" placeholder="123456" />
+        <button class="btn btn-primary" onclick="submitVerify()">Verify</button>
+      </div>
+      <div id="verify-error" class="form-error" hidden></div>
+    </div>
+  </section>
+
+  <!-- ── Schedule ─────────────────────────────────────────────────── -->
+  <section class="dash-section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-heading">Delivery Schedule</h2>
+        <p class="section-desc">When should we send your daily grade briefing?</p>
+      </div>
+    </div>
+    <div class="schedule-form glass-card">
+      <div class="schedule-row">
+        <div class="form-group">
+          <label class="form-label">Delivery time</label>
+          <input class="form-input" type="time" id="sched-time" value="16:00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Timezone</label>
+          <select class="form-input form-select" id="sched-tz">
+            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+            <option value="America/Denver">Mountain Time (MT)</option>
+            <option value="America/Chicago">Central Time (CT)</option>
+            <option value="America/New_York">Eastern Time (ET)</option>
+            <option value="America/Phoenix">Arizona (MST)</option>
+            <option value="Pacific/Honolulu">Hawaii (HST)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Days of the week</label>
+        <div class="day-chips">
+          <label class="day-chip"><input type="checkbox" value="mon" checked /> Mon</label>
+          <label class="day-chip"><input type="checkbox" value="tue" checked /> Tue</label>
+          <label class="day-chip"><input type="checkbox" value="wed" checked /> Wed</label>
+          <label class="day-chip"><input type="checkbox" value="thu" checked /> Thu</label>
+          <label class="day-chip"><input type="checkbox" value="fri" checked /> Fri</label>
+          <label class="day-chip"><input type="checkbox" value="sat" /> Sat</label>
+          <label class="day-chip"><input type="checkbox" value="sun" /> Sun</label>
+        </div>
+      </div>
+      <div class="schedule-actions">
+        <label class="toggle-label">
+          <input type="checkbox" id="sched-enabled" checked />
+          <span>Enabled</span>
+        </label>
+        <button class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
+      </div>
+      <div id="sched-result" class="form-success" hidden></div>
+    </div>
+  </section>
+
+  <!-- ── Recent Reports ───────────────────────────────────────────── -->
+  <section class="dash-section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-heading">Recent Reports</h2>
+        <p class="section-desc">Grade snapshots sent to your phone.</p>
+      </div>
+    </div>
+    <div id="reports-list" class="item-list">
+      <div class="list-loading">Loading…</div>
+    </div>
+  </section>
+</div>
+
+<!-- ── Add Student Modal ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="student-modal" hidden onclick="closeOnBackdrop(event, 'student-modal')">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="student-modal-title">
+    <div class="modal-header">
+      <h3 id="student-modal-title">Add a Student</h3>
+      <button class="modal-close" onclick="closeModal('student-modal')" aria-label="Close">✕</button>
+    </div>
+    <form id="add-student-form" novalidate>
+      <div class="form-group">
+        <label class="form-label">Student name (display name)</label>
+        <input class="form-input" type="text" id="s-name" placeholder="Emma" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">School district</label>
+        <input class="form-input" type="text" id="s-district" placeholder="mdusd" value="mdusd" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aeries parent email</label>
+        <input class="form-input" type="email" id="s-aeries-email" placeholder="parent@email.com" autocomplete="off" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aeries parent portal password</label>
+        <input class="form-input" type="password" id="s-aeries-pw" autocomplete="new-password" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">School code</label>
+          <input class="form-input" type="text" id="s-school-code" placeholder="001" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student number</label>
+          <input class="form-input" type="text" id="s-student-num" placeholder="123456" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student ID</label>
+          <input class="form-input" type="text" id="s-student-id" placeholder="789" required />
+        </div>
+      </div>
+      <div id="student-form-error" class="form-error" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('student-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="add-student-btn">Add Student</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Add Phone Modal ────────────────────────────────────────────── -->
+<div class="modal-overlay" id="phone-modal" hidden onclick="closeOnBackdrop(event, 'phone-modal')">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="phone-modal-title">
+    <div class="modal-header">
+      <h3 id="phone-modal-title">Add Phone Number</h3>
+      <button class="modal-close" onclick="closeModal('phone-modal')" aria-label="Close">✕</button>
+    </div>
+    <form id="add-phone-form" novalidate>
+      <div class="form-group">
+        <label class="form-label">Phone number (E.164 format)</label>
+        <input class="form-input" type="tel" id="p-phone" placeholder="+15551234567" required />
+        <p class="form-hint">We'll text a 6-digit verification code.</p>
+      </div>
+      <div id="phone-form-error" class="form-error" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('phone-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="add-phone-btn">Send Verification Code</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Pass auth token to app.js via global
+  window.SUBPLOT_TOKEN = "{{ token }}";
+</script>
+{% endblock %}

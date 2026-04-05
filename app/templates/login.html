@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Subplot{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">◎</div>
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-sub">Sign in to your Subplot account.</p>
+    </div>
+
+    <form class="auth-form" id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">Email address</label>
+        <input
+          class="form-input"
+          type="email"
+          id="email"
+          name="email"
+          placeholder="you@example.com"
+          autocomplete="email"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input
+          class="form-input"
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Your password"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+
+      <div id="auth-error" class="form-error" hidden></div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+        Sign in
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      Don't have an account? <a href="/signup" class="link">Create one free</a>
+    </p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('auth-error');
+  err.hidden = true;
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  const data = {
+    email: document.getElementById('email').value.trim(),
+    password: document.getElementById('password').value,
+  };
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      window.location.href = '/dashboard';
+    } else {
+      const body = await res.json();
+      err.textContent = body.detail || 'Invalid email or password.';
+      err.hidden = false;
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  } catch {
+    err.textContent = 'Network error. Please try again.';
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+});
+</script>
+{% endblock %}

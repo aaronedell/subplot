@@ -1,0 +1,2 @@
+# Scraper uses only the Python standard library — no external dependencies.
+# stdlib modules used: os, sys, json, time, re, urllib.request, urllib.parse, http.cookiejar
