@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 def _get_fernet() -> Fernet:
     """Return a Fernet instance, auto-generating a key if one isn't configured."""
-    key = os.environ.get("SUBPLOT_ENCRYPTION_KEY", "")
+    from app.config import settings as _settings
+    key = _settings.SUBPLOT_ENCRYPTION_KEY or os.environ.get("SUBPLOT_ENCRYPTION_KEY", "")
     if not key:
         # Generate a one-time key and warn — fine for local dev, dangerous in production.
         key = Fernet.generate_key().decode()

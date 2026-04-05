@@ -51,7 +51,7 @@ app.include_router(reports.router)
 
 @app.get("/", response_class=HTMLResponse)
 async def landing(request: Request):
-    return templates.TemplateResponse("landing.html", {"request": request})
+    return templates.TemplateResponse(request, "landing.html")
 
 
 @app.get("/signup", response_class=HTMLResponse)
@@ -59,7 +59,7 @@ async def signup_page(request: Request):
     token = request.cookies.get("access_token")
     if token:
         return RedirectResponse("/dashboard", status_code=status.HTTP_302_FOUND)
-    return templates.TemplateResponse("signup.html", {"request": request})
+    return templates.TemplateResponse(request, "signup.html")
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -67,7 +67,7 @@ async def login_page(request: Request):
     token = request.cookies.get("access_token")
     if token:
         return RedirectResponse("/dashboard", status_code=status.HTTP_302_FOUND)
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request, "login.html")
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -97,8 +97,9 @@ async def dashboard(request: Request):
         return RedirectResponse("/login", status_code=status.HTTP_302_FOUND)
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
-        {"request": request, "current_user": user, "token": token},
+        {"current_user": user, "token": token},
     )
 
 
